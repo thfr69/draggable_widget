@@ -22,7 +22,7 @@ class DraggableWidget extends StatefulWidget {
   final AnchoringPosition initialPosition;
 
   /// Intially should the widget be visible or not, default to [true]
-  final bool intialVisibility;
+  final bool initialVisibility;
 
   /// The top bottom pargin to create the bottom boundary for the widget, for example if you have a [BottomNavigationBar],
   /// then you may need to set the bottom boundary so that the draggable button can't get on top of the [BottomNavigationBar]
@@ -68,13 +68,19 @@ class DraggableWidget extends StatefulWidget {
   /// Touch Delay Duration. Default value is zero. When set, drag operations will trigger after the duration.
   final Duration touchDelay;
 
+  final Function(AnchoringPosition anchoringPosition)? onDraggingCompleted;
+
+  final Function()? onDraggingStarted;
+
+  final Function()? onTap;
+
   DraggableWidget({
     Key? key,
     required this.child,
     this.horizontalSpace = 0,
     this.verticalSpace = 0,
     this.initialPosition = AnchoringPosition.bottomRight,
-    this.intialVisibility = true,
+    this.initialVisibility = true,
     this.bottomMargin = 0,
     this.topMargin = 0,
     this.statusBarHeight = 24,
@@ -92,6 +98,9 @@ class DraggableWidget extends StatefulWidget {
       offset: Offset(0, 10),
       blurRadius: 10,
     ),
+    this.onDraggingCompleted,
+    this.onDraggingStarted,
+    this.onTap,
   })  : assert(statusBarHeight >= 0),
         assert(horizontalSpace >= 0),
         assert(verticalSpace >= 0),
@@ -126,7 +135,7 @@ class _DraggableWidgetState extends State<DraggableWidget>
 
   bool? visible;
 
-  bool get currentVisibilty => visible ?? widget.intialVisibility;
+  bool get currentVisibility => visible ?? widget.initialVisibility;
 
   bool isStillTouching = false;
 
@@ -142,13 +151,22 @@ class _DraggableWidgetState extends State<DraggableWidget>
       ..addListener(() {
         if (currentDocker != null) {
           animateWidget(currentDocker!);
+          // widget.onDragEnd!(_getCurrentPosition());
         }
       })
       ..addStatusListener(
         (status) {
+          if(status == AnimationStatus.forward) {
+            if(widget.onDraggingStarted != null) {
+              widget.onDraggingStarted!();
+            }
+          }
           if (status == AnimationStatus.completed) {
             hardLeft = left;
             hardTop = top;
+            if(widget.onDraggingCompleted != null) {
+              widget.onDraggingCompleted!(currentDocker!);
+            }
           }
         },
       );
@@ -247,93 +265,103 @@ class _DraggableWidgetState extends State<DraggableWidget>
     return Positioned(
       top: top,
       left: left,
-      child: AnimatedSwitcher(
-        duration: Duration(
-          milliseconds: 150,
-        ),
-        transitionBuilder: (child, animation) {
-          return ScaleTransition(
-            scale: animation,
-            child: child,
-          );
-        },
-        child: !currentVisibilty
-            ? Container()
-            : Listener(
-                onPointerUp: (v) {
-                  if (!isStillTouching) {
-                    return;
-                  }
-                  isStillTouching = false;
+      child: GestureDetector(
+        // onTap: widget.onTap,
+        // onLongPress: () {
+        //   widget.onTap!();
+        // },
+        onTap: widget.onTap!,
+        child: AnimatedSwitcher(
+          duration: Duration(
+            milliseconds: 150,
+          ),
+          transitionBuilder: (child, animation) {
+            return ScaleTransition(
+              scale: animation,
+              child: child,
+            );
+          },
+          child: !currentVisibility
+              ? Container()
+              : Listener(
+                  onPointerUp: (v) {
+                    if (!isStillTouching) {
+                      return;
+                    }
+                    isStillTouching = false;
 
-                  final p = v.position;
-                  currentDocker = determineDocker(p.dx, p.dy);
-                  setState(() {
-                    dragging = false;
-                  });
-                  if (animationController.isAnimating) {
-                    animationController.stop();
-                  }
-                  animationController.reset();
-                  animationController.forward();
-                },
-                onPointerDown: (v) async {
-                  isStillTouching = false;
-                  await Future.delayed(widget.touchDelay);
-                  isStillTouching = true;
-                },
-                onPointerMove: (v) async {
-                  if (!isStillTouching) {
-                    return;
-                  }
-                  if (animationController.isAnimating) {
-                    animationController.stop();
+                    final p = v.position;
+                    currentDocker = determineDocker(p.dx, p.dy);
+                    setState(() {
+                      dragging = false;
+                    });
+                    if (animationController.isAnimating) {
+                      animationController.stop();
+                    }
                     animationController.reset();
-                  }
-
-                  setState(() {
-                    dragging = true;
-                    if (v.position.dy < boundary &&
-                        v.position.dy > widget.topMargin) {
-                      top = max(v.position.dy - (widgetHeight) / 2, 0);
+                    animationController.forward();
+                  },
+                  onPointerDown: (v) async {
+                    isStillTouching = false;
+                    if(widget.onDraggingStarted != null) {
+                       widget.onDraggingStarted!();
+                    }
+                    await Future.delayed(widget.touchDelay);
+                    isStillTouching = true;
+                  },
+                  onPointerMove: (v) async {
+                    if (!isStillTouching) {
+                      return;
+                    }
+                    if (animationController.isAnimating) {
+                      animationController.stop();
+                      animationController.reset();
                     }
 
-                    left = max(v.position.dx - (widgetWidth) / 2, 0);
+                    setState(() {
+                      dragging = true;
+                      if (v.position.dy < boundary &&
+                          v.position.dy > widget.topMargin) {
+                        top = max(v.position.dy - (widgetHeight) / 2, 0);
+                      }
 
-                    hardLeft = left;
-                    hardTop = top;
-                  });
-                },
-                child: Offstage(
-                  offstage: offstage,
-                  child: Container(
-                    key: key,
-                    padding: EdgeInsets.symmetric(
-                      horizontal: widget.horizontalSpace,
-                      vertical: widget.verticalSpace,
+                      left = max(v.position.dx - (widgetWidth) / 2, 0);
+
+                      hardLeft = left;
+                      hardTop = top;
+                    });
+                  },
+                  child: Offstage(
+                    offstage: offstage,
+                    child: Container(
+                      key: key,
+                      padding: EdgeInsets.symmetric(
+                        horizontal: widget.horizontalSpace,
+                        vertical: widget.verticalSpace,
+                      ),
+                      child: AnimatedContainer(
+                          duration: Duration(milliseconds: 150),
+                          decoration: BoxDecoration(
+                            borderRadius:
+                                BorderRadius.circular(widget.shadowBorderRadius),
+                            boxShadow: [
+                              dragging
+                                  ? widget.draggingShadow
+                                  : widget.normalShadow
+                              // BoxShadow(
+                              //   color: Colors.black38,
+                              //   offset: dragging ? Offset(0, 10) : Offset(0, 4),
+                              //   blurRadius: dragging ? 10 : 2,
+                              // )
+                            ],
+                          ),
+                          child: Transform.scale(
+                              scale: dragging ? widget.dragAnimationScale : 1,
+                              child: widget.child)),
                     ),
-                    child: AnimatedContainer(
-                        duration: Duration(milliseconds: 150),
-                        decoration: BoxDecoration(
-                          borderRadius:
-                              BorderRadius.circular(widget.shadowBorderRadius),
-                          boxShadow: [
-                            dragging
-                                ? widget.draggingShadow
-                                : widget.normalShadow
-                            // BoxShadow(
-                            //   color: Colors.black38,
-                            //   offset: dragging ? Offset(0, 10) : Offset(0, 4),
-                            //   blurRadius: dragging ? 10 : 2,
-                            // )
-                          ],
-                        ),
-                        child: Transform.scale(
-                            scale: dragging ? widget.dragAnimationScale : 1,
-                            child: widget.child)),
                   ),
                 ),
-              ),
+        ),
       ),
     );
   }
