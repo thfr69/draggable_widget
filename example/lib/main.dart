@@ -1,8 +1,23 @@
 import 'package:draggable_widget/draggable_widget.dart';
+import 'package:example/src/helping_assistant.dart';
+import 'package:example/src/helping_assistant_cubit.dart';
+import 'package:example/src/speech_bubble_cubit.dart';
+
+
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 void main() {
-  runApp(MyApp());
+  runApp(MultiBlocProvider(
+      providers: [
+        BlocProvider<HelpingAssistantCubit>(create: (context) => HelpingAssistantCubit()),
+        BlocProvider<SpeechBubbleCubit>(create: (context) => SpeechBubbleCubit()),
+      ],
+
+
+      child: MyApp()
+  ));
 }
 
 class MyApp extends StatelessWidget {
@@ -13,121 +28,80 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         visualDensity: VisualDensity.adaptivePlatformDensity,
       ),
+      // home: MyHomePage(title: 'Beispiel',),
       home: MyHomePage(),
     );
   }
 }
 
-class MyHomePage extends StatelessWidget {
-  final dragController = DragController();
+
+
+class MyHomePage extends StatefulWidget {
+  @override
+  State<MyHomePage> createState() => _MyHomePageState();
+}
+
+class _MyHomePageState extends State<MyHomePage> {
+  late HelpingAssistantController controller;
+
+  late double psNowWidth;
+  late double psNowHeight;
+
+  @override
+  void initState() {
+    super.initState();
+
+  }
+
+  @override
+  void dispose() {
+
+    super.dispose();
+  }
+
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+
+    controller = HelpingAssistantController(context);
+
+
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(
+        title: Text('Testpage - PS-Now Helper'),
+        actions: [
+          IconButton(onPressed: _onPressed, icon: const Icon(Icons.live_help_outlined))
+        ],
+      ),
       body: Stack(
         children: <Widget>[
-          Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: <Widget>[
-                TextButton(
-                  onPressed: () {
-                    dragController.showWidget();
-                  },
-                  child: Text("Show"),
-                ),
-                TextButton(
-                  onPressed: () {
-                    dragController.hideWidget();
-                  },
-                  child: Text("Hide"),
-                ),
-                TextButton(
-                  onPressed: () {
-                    dragController.jumpTo(AnchoringPosition.topRight);
-                  },
-                  child: Text("Move to Top Right"),
-                ),
-                TextButton(
-                  onPressed: () {
-                    dragController.jumpTo(AnchoringPosition.topLeft);
-                  },
-                  child: Text("Move to Top Left"),
-                ),
-                TextButton(
-                  onPressed: () {
-                    dragController.jumpTo(AnchoringPosition.bottomRight);
-                  },
-                  child: Text("Move to Bottom Right"),
-                ),
-                TextButton(
-                  onPressed: () {
-                    dragController.jumpTo(AnchoringPosition.bottomLeft);
-                  },
-                  child: Text("Move to Bottom Left"),
-                ),
-                TextButton(
-                  onPressed: () {
-                    dragController.jumpTo(AnchoringPosition.leftCenter);
-                  },
-                  child: Text("Move to Left Center"),
-                ),
-                TextButton(
-                  onPressed: () {
-                    dragController.jumpTo(AnchoringPosition.rightCenter);
-                  },
-                  child: Text("Move to Right Center"),
-                ),
-                TextButton(
-                  onPressed: () {
-                    dragController.jumpTo(AnchoringPosition.topCenter);
-                  },
-                  child: Text("Move to Top Center"),
-                ),
-                TextButton(
-                  onPressed: () {
-                    dragController.jumpTo(AnchoringPosition.bottomCenter);
-                  },
-                  child: Text("Move to Bottom Center"),
-                ),
-                TextButton(
-                  onPressed: () {
-                    dragController.jumpTo(AnchoringPosition.center);
-                  },
-                  child: Text("Move to Center"),
-                ),
-              ],
-            ),
-          ),
-          Container(
-            height: 80,
-            width: double.infinity,
-            color: Colors.green,
-          ),
-          DraggableWidget(
-            bottomMargin: 40,
-            topMargin: 80,
-            initialVisibility: true,
-            horizontalSpace: 0,
-            shadowBorderRadius: 50,
-            child: Container(
-              height: 100,
-              width: 100,
-              decoration: BoxDecoration(
-                color: Colors.blue,
-                borderRadius: BorderRadius.circular(50),
-              ),
-              child: Stack(
-                children: [
-                  Positioned(right: 5, child: IconButton(icon: Icon(Icons.visibility_off_outlined), onPressed: () => dragController.hideWidget()))
-                ],
-              ),
-            ),
-            initialPosition: AnchoringPosition.center,
-            dragController: dragController,
-          )
+          HelpingAssistant(helpingAssistantController: controller,),
+          // DraggableWidget(
+          //   bottomMargin: 40,
+          //   topMargin: 80,
+          //   // initialVisibility: true,
+          //   horizontalSpace: 0,
+          //   shadowBorderRadius: 50,
+          //   child: SvgPicture.asset(
+          //     'assets/icon/ps_now.svg',
+          //     width: 150,
+          //     height: 150,
+          //   ),
+          //   initialPosition: AnchoringPosition.topRight,
+          //   // dragController: dragController,
+          // )
         ],
       ),
     );
+
+  }
+
+  void _onPressed() {
+    controller.controlAssistantVisibility();
   }
 }

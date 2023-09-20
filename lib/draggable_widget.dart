@@ -68,11 +68,12 @@ class DraggableWidget extends StatefulWidget {
   /// Touch Delay Duration. Default value is zero. When set, drag operations will trigger after the duration.
   final Duration touchDelay;
 
-  final Function(AnchoringPosition anchoringPosition)? onDraggingCompleted;
+  final Function(AnchoringPosition anchoringPosition, Offset currentPosition)? onDraggingCompleted;
 
   final Function()? onDraggingStarted;
 
   final Function()? onTap;
+
 
   DraggableWidget({
     Key? key,
@@ -151,21 +152,15 @@ class _DraggableWidgetState extends State<DraggableWidget>
       ..addListener(() {
         if (currentDocker != null) {
           animateWidget(currentDocker!);
-          // widget.onDragEnd!(_getCurrentPosition());
         }
       })
       ..addStatusListener(
-        (status) {
-          if(status == AnimationStatus.forward) {
-            if(widget.onDraggingStarted != null) {
-              widget.onDraggingStarted!();
-            }
-          }
+            (status) {
           if (status == AnimationStatus.completed) {
             hardLeft = left;
             hardTop = top;
             if(widget.onDraggingCompleted != null) {
-              widget.onDraggingCompleted!(currentDocker!);
+              widget.onDraggingCompleted!(currentDocker!, _getCurrentPosition());
             }
           }
         },
@@ -189,8 +184,8 @@ class _DraggableWidgetState extends State<DraggableWidget>
             widgetHeight = widgetSize.height;
             widgetWidth = widgetSize.width;
 
-            middleAreaLeft = MediaQuery.of(context).size.width * 0.1;
-            middleAreaTop = MediaQuery.of(context).size.height * 0.1;
+            middleAreaLeft = widgetWidth;
+            middleAreaTop = widgetHeight;
           });
         }
 
@@ -219,15 +214,17 @@ class _DraggableWidgetState extends State<DraggableWidget>
             top = boundary - widgetHeight + widget.statusBarHeight;
             left = MediaQuery.of(context).size.width / 2 - widgetWidth / 2;
           } else if (widget.initialPosition == AnchoringPosition.leftCenter) {
-            top = MediaQuery.of(context).size.height / 2 - widgetHeight / 2;
+            top = (boundary / 2 - widgetHeight / 2) + widget.statusBarHeight;
             left = 0;
           } else if (widget.initialPosition == AnchoringPosition.rightCenter) {
-            top = MediaQuery.of(context).size.height / 2 - widgetHeight / 2;
+            top = (boundary / 2 - widgetHeight / 2) + widget.statusBarHeight;
             left = MediaQuery.of(context).size.width - widgetWidth;
           } else {
-            top = MediaQuery.of(context).size.height / 2 - widgetHeight / 2;
+            top = (boundary / 2 - widgetHeight / 2) + widget.statusBarHeight;
             left = MediaQuery.of(context).size.width / 2 - widgetWidth / 2;
           }
+          hardTop = top;
+          hardLeft = left;
         });
       });
     }
@@ -266,10 +263,6 @@ class _DraggableWidgetState extends State<DraggableWidget>
       top: top,
       left: left,
       child: GestureDetector(
-        // onTap: widget.onTap,
-        // onLongPress: () {
-        //   widget.onTap!();
-        // },
         onTap: widget.onTap!,
         child: AnimatedSwitcher(
           duration: Duration(
@@ -284,101 +277,111 @@ class _DraggableWidgetState extends State<DraggableWidget>
           child: !currentVisibility
               ? Container()
               : Listener(
-                  onPointerUp: (v) {
-                    if (!isStillTouching) {
-                      return;
-                    }
-                    isStillTouching = false;
+            onPointerUp: (v) {
+              if (!isStillTouching) {
+                return;
+              }
+              isStillTouching = false;
 
-                    final p = v.position;
-                    currentDocker = determineDocker(p.dx, p.dy);
-                    setState(() {
-                      dragging = false;
-                    });
-                    if (animationController.isAnimating) {
-                      animationController.stop();
-                    }
-                    animationController.reset();
-                    animationController.forward();
-                  },
-                  onPointerDown: (v) async {
-                    isStillTouching = false;
-                    if(widget.onDraggingStarted != null) {
-                       widget.onDraggingStarted!();
-                    }
-                    await Future.delayed(widget.touchDelay);
-                    isStillTouching = true;
-                  },
-                  onPointerMove: (v) async {
-                    if (!isStillTouching) {
-                      return;
-                    }
-                    if (animationController.isAnimating) {
-                      animationController.stop();
-                      animationController.reset();
-                    }
+              final p = v.position;
+              currentDocker = determineDocker(p.dx, p.dy);
+              print('currentDocker ${currentDocker}');
+              setState(() {
+                dragging = false;
+              });
+              if (animationController.isAnimating) {
+                animationController.stop();
+              }
+              animationController.reset();
+              animationController.forward();
+            },
+            onPointerDown: (v) async {
+              isStillTouching = false;
+              await Future.delayed(widget.touchDelay);
+              isStillTouching = true;
+            },
+            onPointerMove: (v) async {
+              if (!isStillTouching) {
+                return;
+              }
+              if (animationController.isAnimating) {
+                animationController.stop();
+                animationController.reset();
+              }
 
-                    setState(() {
-                      dragging = true;
-                      if (v.position.dy < boundary &&
-                          v.position.dy > widget.topMargin) {
-                        top = max(v.position.dy - (widgetHeight) / 2, 0);
-                      }
+              setState(() {
+                dragging = true;
+                if (v.position.dy < boundary &&
+                    v.position.dy > widget.topMargin) {
+                  top = max(v.position.dy - (widgetHeight) / 2, 0);
+                }
 
-                      left = max(v.position.dx - (widgetWidth) / 2, 0);
+                left = max(v.position.dx - (widgetWidth) / 2, 0);
 
-                      hardLeft = left;
-                      hardTop = top;
-                    });
-                  },
-                  child: Offstage(
-                    offstage: offstage,
-                    child: Container(
-                      key: key,
-                      padding: EdgeInsets.symmetric(
-                        horizontal: widget.horizontalSpace,
-                        vertical: widget.verticalSpace,
-                      ),
-                      child: AnimatedContainer(
-                          duration: Duration(milliseconds: 150),
-                          decoration: BoxDecoration(
-                            borderRadius:
-                                BorderRadius.circular(widget.shadowBorderRadius),
-                            boxShadow: [
-                              dragging
-                                  ? widget.draggingShadow
-                                  : widget.normalShadow
-                              // BoxShadow(
-                              //   color: Colors.black38,
-                              //   offset: dragging ? Offset(0, 10) : Offset(0, 4),
-                              //   blurRadius: dragging ? 10 : 2,
-                              // )
-                            ],
-                          ),
-                          child: Transform.scale(
-                              scale: dragging ? widget.dragAnimationScale : 1,
-                              child: widget.child)),
-                    ),
-                  ),
+                hardLeft = left;
+                hardTop = top;
+              });
+            },
+            child: Offstage(
+              offstage: offstage,
+              child: Container(
+                key: key,
+                padding: EdgeInsets.symmetric(
+                  horizontal: widget.horizontalSpace,
+                  vertical: widget.verticalSpace,
                 ),
+                child: AnimatedContainer(
+                    duration: Duration(milliseconds: 150),
+                    decoration: BoxDecoration(
+                      borderRadius:
+                      BorderRadius.circular(widget.shadowBorderRadius),
+                      boxShadow: [
+                        dragging
+                            ? widget.draggingShadow
+                            : widget.normalShadow
+                        // BoxShadow(
+                        //   color: Colors.black38,
+                        //   offset: dragging ? Offset(0, 10) : Offset(0, 4),
+                        //   blurRadius: dragging ? 10 : 2,
+                        // )
+                      ],
+                    ),
+                    child: Transform.scale(
+                        scale: dragging ? widget.dragAnimationScale : 1,
+                        child: widget.child)),
+              ),
+            ),
+          ),
         ),
       ),
     );
   }
 
   AnchoringPosition determineDocker(double x, double y) {
+    // print('x:y = $x:$y');
+    // print('middleAreaLeft: ${middleAreaLeft}');
+    // print('middleAreaTop: ${middleAreaTop}');
+
+
     final double totalHeight = boundary;
     final double totalWidth = MediaQuery.of(context).size.width;
+    // print('totalHeight ${totalHeight}');
+    // print('totalHeight ${totalHeight}');
+    //
+    //
+    // print('widget.topMargin ${widget.topMargin}');
+    // print('widget.bottomMargin ${widget.bottomMargin}');
+    // print('widget.statusBarHeight ${widget.statusBarHeight}');
 
-    if (x < totalWidth / 2 - middleAreaLeft && y < totalHeight / 2 - middleAreaTop) {
+    if (x < totalWidth / 2 - middleAreaLeft && y < (totalHeight / 2 - (middleAreaTop - widget.bottomMargin + widget.statusBarHeight))) {
       return AnchoringPosition.topLeft;
     } else if (x < totalWidth / 2 - middleAreaLeft && y > totalHeight / 2 + middleAreaTop) {
       return AnchoringPosition.bottomLeft;
-    } else if (x > totalWidth / 2 + middleAreaLeft && y < totalHeight / 2 - middleAreaTop) {
+    } else if (x > totalWidth / 2 + middleAreaLeft && y < (totalHeight / 2 - (middleAreaTop - widget.bottomMargin + widget.statusBarHeight))) {
       return AnchoringPosition.topRight;
     } else if (x > totalWidth / 2 + middleAreaLeft && y > totalHeight / 2 + middleAreaTop) {
       return AnchoringPosition.bottomRight;
-    } else if (x == x.clamp(totalWidth / 2 - middleAreaLeft, totalWidth / 2 + middleAreaLeft) && y < totalHeight / 2 - middleAreaTop) {
+    } else if (x == x.clamp(totalWidth / 2 - middleAreaLeft, totalWidth / 2 + middleAreaLeft) && y < (totalHeight / 2 - (middleAreaTop - widget.bottomMargin + widget.statusBarHeight))) {
       return AnchoringPosition.topCenter;
     } else if (x == x.clamp(totalWidth / 2 - middleAreaLeft, totalWidth / 2 + middleAreaLeft) && y > totalHeight / 2 + middleAreaTop) {
       return AnchoringPosition.bottomCenter;
@@ -394,6 +397,8 @@ class _DraggableWidgetState extends State<DraggableWidget>
   void animateWidget(AnchoringPosition docker) {
     final double totalHeight = boundary;
     final double totalWidth = MediaQuery.of(context).size.width;
+
+
 
     switch (docker) {
       case AnchoringPosition.topLeft:
@@ -478,8 +483,8 @@ class _DraggableWidgetState extends State<DraggableWidget>
           top = hardTop +
               (animation.value) * remainingDistanceY +
               (widget.statusBarHeight * animation.value);
+          currentlyDocked = AnchoringPosition.bottomCenter;
         });
-        currentlyDocked = AnchoringPosition.bottomCenter;
         break;
       case AnchoringPosition.leftCenter:
         double remainingDistanceY =
@@ -500,7 +505,7 @@ class _DraggableWidgetState extends State<DraggableWidget>
           currentlyDocked = AnchoringPosition.rightCenter;
         });
         break;
-      default:
+
     }
   }
 
