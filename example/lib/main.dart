@@ -1,7 +1,7 @@
 import 'package:draggable_widget/draggable_widget.dart';
-import 'package:example/src/helping_assistant.dart';
-import 'package:example/src/helping_assistant_cubit.dart';
-import 'package:example/src/speech_bubble_cubit.dart';
+import 'package:example/src/view/helping_assistant.dart';
+import 'package:example/src/view_model/helping_assistant_cubit.dart';
+import 'package:example/src/view_model/speech_bubble_cubit.dart';
 
 
 import 'package:flutter/material.dart';
@@ -81,20 +81,7 @@ class _MyHomePageState extends State<MyHomePage> {
       body: Stack(
         children: <Widget>[
           HelpingAssistant(helpingAssistantController: controller,),
-          // DraggableWidget(
-          //   bottomMargin: 40,
-          //   topMargin: 80,
-          //   // initialVisibility: true,
-          //   horizontalSpace: 0,
-          //   shadowBorderRadius: 50,
-          //   child: SvgPicture.asset(
-          //     'assets/icon/ps_now.svg',
-          //     width: 150,
-          //     height: 150,
-          //   ),
-          //   initialPosition: AnchoringPosition.topRight,
-          //   // dragController: dragController,
-          // )
+
         ],
       ),
     );
