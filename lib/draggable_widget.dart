@@ -75,6 +75,10 @@ class DraggableWidget extends StatefulWidget {
 
   final Function()? onTap;
 
+  final Function()? onDoubleTap;
+
+  final bool? callTapImmediately;
+
   DraggableWidget({
     Key? key,
     required this.child,
@@ -102,6 +106,8 @@ class DraggableWidget extends StatefulWidget {
     this.onDraggingCompleted,
     this.onDraggingStarted,
     this.onTap,
+    this.onDoubleTap,
+    this.callTapImmediately,
   })  : assert(statusBarHeight >= 0),
         assert(horizontalSpace >= 0),
         assert(verticalSpace >= 0),
@@ -223,6 +229,10 @@ class _DraggableWidgetState extends State<DraggableWidget> with SingleTickerProv
           hardTop = top;
           hardLeft = left;
         });
+        if(widget.callTapImmediately ?? false) {
+          widget.onTap?.call();
+          Future.delayed(Duration(milliseconds: 100), widget.onDraggingCompleted?.call(_getCurrentDocker(), _getCurrentPosition()));
+        }
       });
     }
     super.initState();
@@ -264,6 +274,7 @@ class _DraggableWidgetState extends State<DraggableWidget> with SingleTickerProv
           widget.onTap?.call();
           Future.delayed(Duration(milliseconds: 100), widget.onDraggingCompleted?.call(_getCurrentDocker(), _getCurrentPosition()));
         },
+        onDoubleTap: () => widget.onDoubleTap?.call(),
         child: AnimatedSwitcher(
           duration: Duration(
             milliseconds: 150,
