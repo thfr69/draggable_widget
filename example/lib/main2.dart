@@ -1,4 +1,4 @@
-import 'package:example/src/custom_animated_overlay.dart';
+import 'package:example/src/view/custom_animated_overlay.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 

@@ -79,6 +79,8 @@ class DraggableWidget extends StatefulWidget {
 
   final bool? callTapImmediately;
 
+  final HelpingAssistantNotifier? helpingAssistantNotifier;
+
   DraggableWidget({
     Key? key,
     required this.child,
@@ -108,6 +110,7 @@ class DraggableWidget extends StatefulWidget {
     this.onTap,
     this.onDoubleTap,
     this.callTapImmediately,
+    this.helpingAssistantNotifier,
   })  : assert(statusBarHeight >= 0),
         assert(horizontalSpace >= 0),
         assert(verticalSpace >= 0),
@@ -235,12 +238,22 @@ class _DraggableWidgetState extends State<DraggableWidget> with SingleTickerProv
         }
       });
     }
+
+    if(widget.helpingAssistantNotifier != null) {
+      widget.helpingAssistantNotifier!.addListener(_onRefresh);
+    }
+
+
     super.initState();
   }
 
   @override
   void dispose() {
     animationController.dispose();
+
+    if(widget.helpingAssistantNotifier != null) {
+      widget.helpingAssistantNotifier!.removeListener(_onRefresh);
+    }
     super.dispose();
   }
 
@@ -526,6 +539,11 @@ class _DraggableWidgetState extends State<DraggableWidget> with SingleTickerProv
   void _notifyAnimationListener() {
     animationController.notifyListeners();
   }
+
+  void _onRefresh()  {
+    widget.onDraggingCompleted?.call(_getCurrentDocker(), _getCurrentPosition());
+  }
+
 }
 
 class DragController {
@@ -561,4 +579,8 @@ class DragController {
   void notifyListener() {
     _widgetState?._notifyAnimationListener();
   }
+}
+
+class HelpingAssistantNotifier extends ChangeNotifier {
+  void onRefreshAssistant() => notifyListeners();
 }

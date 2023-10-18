@@ -40,7 +40,6 @@ class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateM
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      floatingActionButton: FloatingActionButton(onPressed: _refresh, child: Icon(Icons.refresh),),
       body: Center(
         child: Animate(
           controller: _animationController,
@@ -68,7 +67,5 @@ class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateM
     );
   }
 
-  void _refresh() {
-    _animationController.an
-  }
+
 }

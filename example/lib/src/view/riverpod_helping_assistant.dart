@@ -2,6 +2,7 @@ import 'package:bubble/bubble.dart';
 import 'package:draggable_widget/draggable_widget.dart';
 import 'package:example/src/model/speech_bubble.dart';
 import 'package:example/src/view/helping_assistant.dart';
+import 'package:example/src/view/widget/speech_bubble.export.dart';
 import 'package:example/src/view_model/speech_bubble_notifier.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
@@ -64,7 +65,7 @@ class _RiverPodHelpingAssistantState extends ConsumerState<RiverPodHelpingAssist
   @override
   Widget build(BuildContext context) {
     bool assistantVisible = ref.watch(assistantVisibilityProvider);
-    bool bubbleVisible = ref.watch(bubbleVisibilityProvider);
+    bool bubbleVisible = ref.watch(bubbleVisibilityProvider) as bool;
     SpeechBubble state = ref.watch(speechBubbleProvider) as SpeechBubble;
 
     return Stack(
@@ -88,15 +89,18 @@ class _RiverPodHelpingAssistantState extends ConsumerState<RiverPodHelpingAssist
                 initialPosition: currentDocker,
                 dragController: _dragController,
                 onTap: () {
-                  ref.read(bubbleVisibilityProvider.notifier).state = !ref.read(bubbleVisibilityProvider);
+                  ref.read(bubbleVisibilityProvider.notifier).state = !ref.read(bubbleVisibilityProvider.notifier).state;
                 },
                 onDraggingCompleted: (anchorPosition, draggableOffset) {
                   currentDocker = anchorPosition;
                   Size draggableSize = Size(_psNowWidth, _psNowHeight);
                   Size? positionalSize = _positionedKey.widgetSize();
                   ref.read(speechBubbleProvider.notifier).refreshSpeechBubble(anchorPosition, draggableOffset, draggableSize, positionalSize!);
+                  ref.read(bubbleVisibilityProvider.notifier).controlBubbleVisibility(hideTemporarily: false);
                 },
-                onDraggingStarted: () {},
+                onDraggingStarted: () {
+                  ref.read(bubbleVisibilityProvider.notifier).controlBubbleVisibility(hideTemporarily: true);
+                },
                 child: SvgPicture.asset(
                   'assets/icon/ps_now.svg',
                   width: 150,
@@ -114,8 +118,8 @@ class _RiverPodHelpingAssistantState extends ConsumerState<RiverPodHelpingAssist
               child: Animate(
                 // key: _bubbleKey,
                 effects: const [ScaleEffect()],
-                child: Bubble(
-                  margin: const BubbleEdges.only(top: 10),
+                child: SpeechBubbleWidget(
+                  margin: const SpeechBubbleEdges.only(top: 10),
                   nipWidth: 8,
                   nipHeight: 24,
                   nip: state.bubbleNip,
@@ -127,11 +131,12 @@ class _RiverPodHelpingAssistantState extends ConsumerState<RiverPodHelpingAssist
                       child: Text(
                         'Lorem ipsum dolor sit amet, ut aperiri euripidis vim, minimum eligendi tractatos ius ei.',
                         style: const TextStyle(fontSize: 20),
-                      ).animate().fadeIn(delay: 500.ms),
+                      ).animate(target: ref.read(bubbleVisibilityProvider.notifier).state ? 1 : 0).fadeIn(delay: 400.ms),
+
                     ),
                     // child: Text('Lorem ipsum dolor ', style: TextStyle(fontSize: 20),)
                   ),
-                ).animate().scale(delay: 100.ms),
+                ).animate(target: ref.read(bubbleVisibilityProvider.notifier).state ? 1 : 0).fadeIn(delay: 200.ms),
               ),
             )),
       ],
