@@ -12,7 +12,7 @@ void main() {
   runApp(MultiBlocProvider(
       providers: [
         BlocProvider<HelpingAssistantCubit>(create: (context) => HelpingAssistantCubit()),
-        BlocProvider<SpeechBubbleCubit>(create: (context) => SpeechBubbleCubit()),
+        // BlocProvider<SpeechBubbleCubit>(create: (context) => SpeechBubbleCubit()),
       ],
 
 
@@ -35,7 +35,6 @@ class MyApp extends StatelessWidget {
 }
 
 
-
 class MyHomePage extends StatefulWidget {
   @override
   State<MyHomePage> createState() => _MyHomePageState();
@@ -50,12 +49,10 @@ class _MyHomePageState extends State<MyHomePage> {
   @override
   void initState() {
     super.initState();
-
   }
 
   @override
   void dispose() {
-
     super.dispose();
   }
 
@@ -65,30 +62,37 @@ class _MyHomePageState extends State<MyHomePage> {
     super.didChangeDependencies();
 
     controller = HelpingAssistantController(context);
-
-
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text('Testpage - PS-Now Helper'),
-        actions: [
-          IconButton(onPressed: _onPressed, icon: const Icon(Icons.live_help_outlined))
-        ],
-      ),
-      body: Stack(
-        children: <Widget>[
-          HelpingAssistant(helpingAssistantController: controller,),
+        appBar: AppBar(
+          title: Text('Testpage - PS-Now Helper'),
+          actions: [
+            IconButton(onPressed: _onPressed, icon: const Icon(Icons.live_help_outlined))
+          ],
+        ),
+        body: SafeArea(child: HelpingAssistant(child: SubPage(), helpingAssistantController: controller,))
+      // body: ,
 
-        ],
-      ),
     );
-
   }
 
   void _onPressed() {
-    controller.controlAssistantVisibility();
+    // controller.controlAssistantVisibility();
+    BlocProvider.of<HelpingAssistantCubit>(context).controlAssistantVisibility(showBubbleAsWell: true);
   }
 }
+
+class SubPage extends StatelessWidget {
+  const SubPage({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(color: Colors.yellowAccent, child: ListView(
+      children: List<String>.generate(20, (index) => 'Zeile $index').map((e) => ListTile(title: Text(e),)).toList(),
+    ),);
+  }
+}
+
