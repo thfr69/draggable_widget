@@ -79,6 +79,8 @@ class DraggableWidget extends StatefulWidget {
 
   final bool? callTapImmediately;
 
+  final bool draggingForbidden;
+
   final HelpingAssistantNotifier? helpingAssistantNotifier;
 
   DraggableWidget({
@@ -110,6 +112,7 @@ class DraggableWidget extends StatefulWidget {
     this.onTap,
     this.onDoubleTap,
     this.callTapImmediately,
+    this.draggingForbidden = false,
     this.helpingAssistantNotifier,
   })  : assert(statusBarHeight >= 0),
         assert(horizontalSpace >= 0),
@@ -301,7 +304,7 @@ class _DraggableWidgetState extends State<DraggableWidget> with SingleTickerProv
           child: !currentVisibility
               ? Container()
               : Listener(
-                  onPointerUp: (v) {
+                  onPointerUp: !widget.draggingForbidden ? (v) {
                     if (!isStillTouching) {
                       return;
                     }
@@ -317,13 +320,13 @@ class _DraggableWidgetState extends State<DraggableWidget> with SingleTickerProv
                     }
                     animationController.reset();
                     animationController.forward();
-                  },
-                  onPointerDown: (v) async {
+                  } : null,
+                  onPointerDown: !widget.draggingForbidden ? (v) async {
                     isStillTouching = false;
                     await Future.delayed(widget.touchDelay);
                     isStillTouching = true;
-                  },
-                  onPointerMove: (v) async {
+                  } : null,
+                  onPointerMove: !widget.draggingForbidden ? (v) async {
                     if (!isStillTouching) {
                       return;
                     }
@@ -347,7 +350,7 @@ class _DraggableWidgetState extends State<DraggableWidget> with SingleTickerProv
                       hardLeft = left;
                       hardTop = top;
                     });
-                  },
+                  } : null,
                   child: Offstage(
                     offstage: offstage,
                     child: Container(
